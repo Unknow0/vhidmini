@@ -1,13 +1,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11415.280 d18.0
+VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 12.0
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "App", "App", "{744A43A0-C177-412C-A0F7-C875B9C5C5B5}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Driver", "Driver", "{837BF49F-1143-4D82-A340-99AAFAE83F72}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testvhid", "app\testvhid.vcxproj", "{36B830C1-B73B-4CEE-B872-FD7D09268BD0}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vhidmini", "driver\vhidmini.vcxproj", "{64048006-1C5F-4262-823B-54310D7F3869}"
 EndProject
 Global
@@ -18,14 +12,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|ARM64.Build.0 = Debug|ARM64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|x64.ActiveCfg = Debug|x64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|x64.Build.0 = Debug|x64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|ARM64.ActiveCfg = Release|ARM64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|ARM64.Build.0 = Release|ARM64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|x64.ActiveCfg = Release|x64
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|x64.Build.0 = Release|x64
 		{64048006-1C5F-4262-823B-54310D7F3869}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{64048006-1C5F-4262-823B-54310D7F3869}.Debug|ARM64.Build.0 = Debug|ARM64
 		{64048006-1C5F-4262-823B-54310D7F3869}.Debug|x64.ActiveCfg = Debug|x64
@@ -37,10 +23,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{36B830C1-B73B-4CEE-B872-FD7D09268BD0} = {744A43A0-C177-412C-A0F7-C875B9C5C5B5}
-		{64048006-1C5F-4262-823B-54310D7F3869} = {837BF49F-1143-4D82-A340-99AAFAE83F72}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {50A89B31-AE97-491B-84FD-321EB042420B}

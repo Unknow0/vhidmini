@@ -45,19 +45,28 @@ RequestGetHidXferPacket_ToReadFromDevice(
     _Out_ HID_XFER_PACKET  *Packet
     )
 {
-    NTSTATUS                status;
     WDF_REQUEST_PARAMETERS  params;
 
     WDF_REQUEST_PARAMETERS_INIT(&params);
     WdfRequestGetParameters(Request, &params);
 
     if (params.Parameters.DeviceIoControl.OutputBufferLength < sizeof(HID_XFER_PACKET)) {
-        status = STATUS_BUFFER_TOO_SMALL;
         KdPrint(("RequestGetHidXferPacket: invalid HID_XFER_PACKET\n"));
-        return status;
+        return STATUS_BUFFER_TOO_SMALL;
     }
 
-    RtlCopyMemory(Packet, WdfRequestWdmGetIrp(Request)->UserBuffer, sizeof(HID_XFER_PACKET));
+    PIRP irp = WdfRequestWdmGetIrp(Request);
+    if (irp == NULL) {
+        KdPrint(("RequestGetHidXferPacket: WdfRequestWdmGetIrp returned NULL\n"));
+        return STATUS_INVALID_DEVICE_REQUEST;
+    }
+    
+    if (irp->UserBuffer == NULL) {
+        KdPrint(("RequestGetHidXferPacket: Irp->UserBuffer is NULL\n"));
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    RtlCopyMemory(Packet, irp->UserBuffer, sizeof(HID_XFER_PACKET));
     return STATUS_SUCCESS;
 }
 
@@ -67,16 +76,25 @@ RequestGetHidXferPacket_ToWriteToDevice(
     _Out_ HID_XFER_PACKET  *Packet
     )
 {
-    NTSTATUS                status;
     WDF_REQUEST_PARAMETERS  params;
 
     WDF_REQUEST_PARAMETERS_INIT(&params);
     WdfRequestGetParameters(Request, &params);
 
     if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(HID_XFER_PACKET)) {
-        status = STATUS_BUFFER_TOO_SMALL;
         KdPrint(("RequestGetHidXferPacket: invalid HID_XFER_PACKET\n"));
-        return status;
+        return STATUS_BUFFER_TOO_SMALL;
+    }
+
+    PIRP irp = WdfRequestWdmGetIrp(Request);
+    if (irp == NULL) {
+        KdPrint(("RequestGetHidXferPacket: WdfRequestWdmGetIrp returned NULL\n"));
+        return STATUS_INVALID_DEVICE_REQUEST;
+    }
+
+    if (irp->UserBuffer == NULL) {
+        KdPrint(("RequestGetHidXferPacket: Irp->UserBuffer is NULL\n"));
+        return STATUS_INVALID_PARAMETER;
     }
 
     RtlCopyMemory(Packet, WdfRequestWdmGetIrp(Request)->UserBuffer, sizeof(HID_XFER_PACKET));

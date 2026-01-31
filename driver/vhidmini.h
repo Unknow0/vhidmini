@@ -28,13 +28,13 @@ typedef UCHAR HID_REPORT_DESCRIPTOR, *PHID_REPORT_DESCRIPTOR;
 
 DRIVER_INITIALIZE                   DriverEntry;
 EVT_WDF_DRIVER_DEVICE_ADD           EvtDeviceAdd;
-EVT_WDF_TIMER                       EvtTimerFunc;
 
 typedef struct _DEVICE_CONTEXT
 {
     WDFDEVICE               Device;
     WDFQUEUE                QueueKernel;
     WDFQUEUE                ManualQueue;
+    WDFQUEUE                QueueUser;
     HID_DEVICE_ATTRIBUTES   HidDeviceAttributes;
     BYTE                    DeviceData;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
@@ -61,7 +61,6 @@ typedef struct _MANUAL_QUEUE_CONTEXT
 {
     WDFQUEUE                Queue;
     PDEVICE_CONTEXT         DeviceContext;
-    WDFTIMER                Timer;
 
 } MANUAL_QUEUE_CONTEXT, *PMANUAL_QUEUE_CONTEXT;
 
@@ -71,61 +70,6 @@ NTSTATUS
 ManualQueueCreate(
     _In_  WDFDEVICE         Device,
     _Out_ WDFQUEUE          *Queue
-    );
-
-NTSTATUS
-ReadReport(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request,
-    _Always_(_Out_)
-          BOOLEAN*          CompleteRequest
-    );
-
-NTSTATUS
-WriteReport(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-GetFeature(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-SetFeature(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-GetInputReport(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-SetOutputReport(
-    _In_  PQUEUE_CONTEXT    QueueContext,
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-GetString(
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-GetIndexedString(
-    _In_  WDFREQUEST        Request
-    );
-
-NTSTATUS
-GetStringId(
-    _In_  WDFREQUEST        Request,
-    _Out_ ULONG            *StringId,
-    _Out_ ULONG            *LanguageId
     );
 
 NTSTATUS
