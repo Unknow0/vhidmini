@@ -58,7 +58,11 @@ typedef struct _DEVICE_CONTEXT
     WDFQUEUE                ManualQueue;
     WDFQUEUE                QueueUser;
     HID_DEVICE_ATTRIBUTES   HidDeviceAttributes;
-    BYTE                    DeviceData;
+    WDFWAITLOCK             StateLock;
+	HID_KEYBOARD_REPORT     KeyboardState;
+    int                     KeyboardChanged;
+	HID_MOUSE_REPORT        MouseState;
+    int                     MouseChanged;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext);

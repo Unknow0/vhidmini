@@ -78,9 +78,19 @@ HANDLE OpenVhidMini()
     return deviceHandle;
 }
 
+VOID sendKey(HANDLE hDevice, PVHID_KEY_EVENT key) {
+    if (!DeviceIoControl(hDevice, (DWORD)IOCTL_VHIDMINI_KEY_EVENT, key, sizeof(VHID_KEY_EVENT), NULL, 0, NULL, NULL))
+        printf("Failed to send: %d\n", GetLastError());
+}
+
 int main(char* argc, char* argv[]) {
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
+
+    VHID_KEY_EVENT keyEvent = {
+        .KeyCode = 0x04,
+        .Pressed = 1
+    };
 
     HANDLE hDevice = OpenVhidMini();
     if (hDevice == INVALID_HANDLE_VALUE) {
@@ -88,21 +98,12 @@ int main(char* argc, char* argv[]) {
         return 1;
     }
 
-	ULONG input = 42;
-	ULONG output = 0;
-	DWORD returned;
+    sendKey(hDevice, &keyEvent);
+    keyEvent.Pressed=0;
+    Sleep(50);
+    sendKey(hDevice, &keyEvent);
 
-	DeviceIoControl(hDevice,
-		(DWORD)IOCTL_VHIDMINI_KEY,
-		&input,
-		sizeof(input),
-		&output,
-		sizeof(output),
-		&returned,
-		NULL
-	);
-
-	printf("Returned: %lu\n", output);
+    Sleep(50);
 	CloseHandle(hDevice);
 	return 0;
 }

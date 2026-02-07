@@ -123,12 +123,7 @@ Return Value:
 
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&queueAttributes, QUEUE_CONTEXT);
 
-    status = WdfIoQueueCreate(
-        Device,
-        &queueConfig,
-        &queueAttributes,
-        &queue);
-
+    status = WdfIoQueueCreate(Device, &queueConfig, &queueAttributes, &queue);
     if (!NT_SUCCESS(status)) {
         KdPrint(("WdfIoQueueCreate failed 0x%x\n", status));
         return status;
@@ -152,15 +147,29 @@ ReadReport(
 )
 {
     NTSTATUS                status;
+	PDEVICE_CONTEXT		    deviceContext = QueueContext->DeviceContext;
 
     KdPrint(("ReadReport\n"));
+
+    WdfWaitLockAcquire(deviceContext->StateLock, NULL);
+    if(deviceContext->KeyboardChanged) {
+		status = RequestCopyFromBuffer(Request, &deviceContext->KeyboardState, sizeof(HID_KEYBOARD_REPORT));
+        deviceContext->KeyboardChanged = FALSE;
+        *CompleteRequest = TRUE;
+        return status;
+    }
+    if (deviceContext->MouseChanged) {
+        status = RequestCopyFromBuffer(Request, &deviceContext->MouseState, sizeof(HID_MOUSE_REPORT));
+        deviceContext->MouseChanged = FALSE;
+        *CompleteRequest = TRUE;
+        return status;
+    }
+    WdfWaitLockRelease(deviceContext->StateLock);
 
     //
     // forward the request to manual queue
     //
-    status = WdfRequestForwardToIoQueue(
-        Request,
-        QueueContext->DeviceContext->ManualQueue);
+    status = WdfRequestForwardToIoQueue(Request, deviceContext->ManualQueue);
     if (!NT_SUCCESS(status)) {
         KdPrint(("WdfRequestForwardToIoQueue failed with 0x%x\n", status));
         *CompleteRequest = TRUE;
@@ -180,7 +189,6 @@ GetInputReport(
 {
     NTSTATUS status;
     HID_XFER_PACKET packet;
-	UNREFERENCED_PARAMETER(QueueContext);
 
     status = RequestGetHidXferPacket_ToReadFromDevice(Request, &packet);
     if (!NT_SUCCESS(status)) return status;
@@ -191,12 +199,11 @@ GetInputReport(
     {
         if (packet.reportBufferLen != sizeof(HID_KEYBOARD_REPORT))
             return STATUS_INVALID_BUFFER_SIZE;
-
-		HID_KEYBOARD_REPORT kbReport = { 0 }; // TODO get real data
-        kbReport.ReportId = KEYBOARD_REPORT_ID;
-
-        RtlCopyMemory(packet.reportBuffer, &kbReport, sizeof(kbReport));
-        WdfRequestSetInformation(Request, sizeof(kbReport));
+        
+        WdfWaitLockAcquire(QueueContext->DeviceContext->StateLock, NULL);
+        RtlCopyMemory(packet.reportBuffer, &QueueContext->DeviceContext->KeyboardState, sizeof(HID_KEYBOARD_REPORT));
+        WdfWaitLockRelease(QueueContext->DeviceContext->StateLock);
+        WdfRequestSetInformation(Request, sizeof(HID_KEYBOARD_REPORT));
         break;
     }
     case MOUSE_REPORT_ID:
@@ -204,11 +211,10 @@ GetInputReport(
         if (packet.reportBufferLen != sizeof(HID_MOUSE_REPORT))
             return STATUS_INVALID_BUFFER_SIZE;
 
-        HID_MOUSE_REPORT mouseReport = { 0 }; // TODO get real data
-        mouseReport.ReportId = MOUSE_REPORT_ID;
-
-        RtlCopyMemory(packet.reportBuffer, &mouseReport, sizeof(mouseReport));
-        WdfRequestSetInformation(Request, sizeof(mouseReport));
+        WdfWaitLockAcquire(QueueContext->DeviceContext->StateLock, NULL);
+        RtlCopyMemory(packet.reportBuffer, &QueueContext->DeviceContext->MouseState, sizeof(HID_MOUSE_REPORT));
+        WdfWaitLockRelease(QueueContext->DeviceContext->StateLock);
+        WdfRequestSetInformation(Request, sizeof(HID_MOUSE_REPORT));
         break;
     }
     default:

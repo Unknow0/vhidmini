@@ -112,8 +112,9 @@ Return Value:
     }
 
     deviceContext = GetDeviceContext(device);
+    RtlZeroMemory(deviceContext, sizeof(DEVICE_CONTEXT));
+
     deviceContext->Device       = device;
-    deviceContext->DeviceData   = 0;
 
     hidAttributes = &deviceContext->HidDeviceAttributes;
     RtlZeroMemory(hidAttributes, sizeof(HID_DEVICE_ATTRIBUTES));
@@ -121,6 +122,13 @@ Return Value:
     hidAttributes->VendorID     = HIDMINI_VID;
     hidAttributes->ProductID    = HIDMINI_PID;
     hidAttributes->VersionNumber = HIDMINI_VERSION;
+
+	deviceContext->KeyboardState.ReportId = KEYBOARD_REPORT_ID;
+	deviceContext->MouseState.ReportId = MOUSE_REPORT_ID;
+
+    status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &deviceContext->StateLock);
+    if (!NT_SUCCESS(status))
+        return status;
 
     status = KernelQueueCreate(device, &deviceContext->QueueKernel);
     if(!NT_SUCCESS(status))

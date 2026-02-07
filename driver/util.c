@@ -40,10 +40,9 @@ Return Value:
 
     WdfMemoryGetBuffer(memory, &outputBufferLength);
     if (outputBufferLength < NumBytesToCopyFrom) {
-        status = STATUS_INVALID_BUFFER_SIZE;
         KdPrint(("RequestCopyFromBuffer: buffer too small. Size %d, expect %d\n",
             (int)outputBufferLength, (int)NumBytesToCopyFrom));
-        return status;
+        return STATUS_INVALID_BUFFER_SIZE;
     }
 
     status = WdfMemoryCopyFromBuffer(memory,
