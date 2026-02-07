@@ -1,22 +1,7 @@
-/*++
-
-Copyright (C) Microsoft Corporation, All Rights Reserved.
-
-Module Name:
-
-    vhidmini.cpp
-
-Abstract:
-
-    This module contains the implementation of the driver
-
-Environment:
-
-    Windows Driver Framework (WDF)
-
---*/
-
 #include "vhidmini.h"
+
+EVT_WDF_DEVICE_FILE_CREATE EvtDeviceFileCreate;
+EVT_WDF_FILE_CLOSE EvtFileClose;
 
 NTSTATUS
 DriverEntry(
@@ -107,17 +92,20 @@ Return Value:
     WDFDEVICE               device;
     PDEVICE_CONTEXT         deviceContext;
     PHID_DEVICE_ATTRIBUTES  hidAttributes;
+    WDF_FILEOBJECT_CONFIG   fileConfig;
     UNREFERENCED_PARAMETER  (Driver);
 
     KdPrint(("Enter EvtDeviceAdd\n"));
 
-    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(
-                            &deviceAttributes,
-                            DEVICE_CONTEXT);
+    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&deviceAttributes, DEVICE_CONTEXT);
 
-    status = WdfDeviceCreate(&DeviceInit,
-                            &deviceAttributes,
-                            &device);
+    WdfFdoInitSetFilter(DeviceInit);
+
+    WDF_FILEOBJECT_CONFIG_INIT(&fileConfig, EvtDeviceFileCreate, EvtFileClose, WDF_NO_EVENT_CALLBACK);
+
+    WdfDeviceInitSetFileObjectConfig(DeviceInit, &fileConfig, WDF_NO_OBJECT_ATTRIBUTES);
+
+    status = WdfDeviceCreate(&DeviceInit, &deviceAttributes, &device);
     if (!NT_SUCCESS(status)) {
         KdPrint(("Error: WdfDeviceCreate failed 0x%x\n", status));
         return status;
@@ -134,75 +122,19 @@ Return Value:
     hidAttributes->ProductID    = HIDMINI_PID;
     hidAttributes->VersionNumber = HIDMINI_VERSION;
 
-    status = QueueCreateKernel(device, &deviceContext->QueueKernel);
-    if( !NT_SUCCESS(status) ) {
+    status = KernelQueueCreate(device, &deviceContext->QueueKernel);
+    if(!NT_SUCCESS(status))
         return status;
-    }
 
-    status = ManualQueueCreate(device,
-                               &deviceContext->ManualQueue);
-    if( !NT_SUCCESS(status) ) {
+
+    status = ManualQueueCreate(device, &deviceContext->ManualQueue);
+    if(!NT_SUCCESS(status)) 
         return status;
-    }
 
-    return status;
-}
-
-NTSTATUS
-RequestCopyFromBuffer(
-    _In_  WDFREQUEST        Request,
-    _In_  PVOID             SourceBuffer,
-    _When_(NumBytesToCopyFrom == 0, __drv_reportError(NumBytesToCopyFrom cannot be zero))
-    _In_  size_t            NumBytesToCopyFrom
-    )
-/*++
-
-Routine Description:
-
-    A helper function to copy specified bytes to the request's output memory
-
-Arguments:
-
-    Request - A handle to a framework request object.
-
-    SourceBuffer - The buffer to copy data from.
-
-    NumBytesToCopyFrom - The length, in bytes, of data to be copied.
-
-Return Value:
-
-    NTSTATUS
-
---*/
-{
-    NTSTATUS                status;
-    WDFMEMORY               memory;
-    size_t                  outputBufferLength;
-
-    status = WdfRequestRetrieveOutputMemory(Request, &memory);
-    if( !NT_SUCCESS(status) ) {
-        KdPrint(("WdfRequestRetrieveOutputMemory failed 0x%x\n",status));
+    status = UserQueueCreate(device, &deviceContext->QueueUser);
+    if (!NT_SUCCESS(status))
         return status;
-    }
 
-    WdfMemoryGetBuffer(memory, &outputBufferLength);
-    if (outputBufferLength < NumBytesToCopyFrom) {
-        status = STATUS_INVALID_BUFFER_SIZE;
-        KdPrint(("RequestCopyFromBuffer: buffer too small. Size %d, expect %d\n",
-                (int)outputBufferLength, (int)NumBytesToCopyFrom));
-        return status;
-    }
-
-    status = WdfMemoryCopyFromBuffer(memory,
-                                    0,
-                                    SourceBuffer,
-                                    NumBytesToCopyFrom);
-    if( !NT_SUCCESS(status) ) {
-        KdPrint(("WdfMemoryCopyFromBuffer failed 0x%x\n",status));
-        return status;
-    }
-
-    WdfRequestSetInformation(Request, NumBytesToCopyFrom);
     return status;
 }
 
@@ -211,51 +143,12 @@ ManualQueueCreate(
     _In_  WDFDEVICE         Device,
     _Out_ WDFQUEUE          *Queue
     )
-/*++
-Routine Description:
-
-    This function creates a manual I/O queue to receive IOCTL_HID_READ_REPORT
-    forwarded from the device's default queue handler.
-
-    It also creates a periodic timer to check the queue and complete any pending
-    request with data from the device. Here timer expiring is used to simulate
-    a hardware event that new data is ready.
-
-    The workflow is like this:
-
-    - Hidclass.sys sends an ioctl to the miniport to read input report.
-
-    - The request reaches the driver's default queue. As data may not be avaiable
-      yet, the request is forwarded to a second manual queue temporarily.
-
-    - Later when data is ready (as simulated by timer expiring), the driver
-      checks for any pending request in the manual queue, and then completes it.
-
-    - Hidclass gets notified for the read request completion and return data to
-      the caller.
-
-    On the other hand, for IOCTL_HID_WRITE_REPORT request, the driver simply
-    sends the request to the hardware (as simulated by storing the data at
-    DeviceContext->DeviceData) and completes the request immediately. There is
-    no need to use another queue for write operation.
-
-Arguments:
-
-    Device - Handle to a framework device object.
-
-    Queue - Output pointer to a framework I/O queue handle, on success.
-
-Return Value:
-
-    NTSTATUS
-
---*/
 {
     NTSTATUS                status;
     WDF_IO_QUEUE_CONFIG     queueConfig;
     WDF_OBJECT_ATTRIBUTES   queueAttributes;
     WDFQUEUE                queue;
-    PMANUAL_QUEUE_CONTEXT   queueContext;
+    PQUEUE_CONTEXT          queueContext;
 
     WDF_IO_QUEUE_CONFIG_INIT(
                             &queueConfig,
@@ -263,7 +156,7 @@ Return Value:
 
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(
                             &queueAttributes,
-                            MANUAL_QUEUE_CONTEXT);
+                            QUEUE_CONTEXT);
 
     status = WdfIoQueueCreate(
                             Device,
@@ -276,7 +169,7 @@ Return Value:
         return status;
     }
 
-    queueContext = GetManualQueueContext(queue);
+    queueContext = GetQueueContext(queue);
     queueContext->Queue         = queue;
     queueContext->DeviceContext = GetDeviceContext(Device);
 
@@ -285,40 +178,21 @@ Return Value:
     return status;
 }
 
-/*
-void
-EvtTimerFunc(
-    _In_  WDFTIMER          Timer
-    )
+VOID EvtDeviceFileCreate(
+    WDFDEVICE Device,
+    WDFREQUEST Request,
+    WDFFILEOBJECT FileObject
+)
 {
-    NTSTATUS                status;
-    WDFQUEUE                queue;
-    PMANUAL_QUEUE_CONTEXT   queueContext;
-    WDFREQUEST              request;
-    HIDMINI_INPUT_REPORT    readReport;
+    UNREFERENCED_PARAMETER(Device);
+    UNREFERENCED_PARAMETER(FileObject);
 
-    KdPrint(("EvtTimerFunc\n"));
-
-    queue = (WDFQUEUE)WdfTimerGetParentObject(Timer);
-    queueContext = GetManualQueueContext(queue);
-
-    //
-    // see if we have a request in manual queue
-    //
-    status = WdfIoQueueRetrieveNextRequest(
-                            queueContext->Queue,
-                            &request);
-
-    if (NT_SUCCESS(status)) {
-
-        readReport.ReportId = CONTROL_FEATURE_REPORT_ID;
-        readReport.Data     = queueContext->DeviceContext->DeviceData;
-
-        status = RequestCopyFromBuffer(request,
-                            &readReport,
-                            sizeof(readReport));
-
-        WdfRequestComplete(request, status);
-    }
+    WdfRequestComplete(Request, STATUS_SUCCESS);
 }
-*/
+
+VOID EvtFileClose(
+    WDFFILEOBJECT FileObject
+)
+{
+    UNREFERENCED_PARAMETER(FileObject);
+}

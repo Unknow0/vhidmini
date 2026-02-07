@@ -4,6 +4,8 @@ VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 12.0
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vhidmini", "driver\vhidmini.vcxproj", "{64048006-1C5F-4262-823B-54310D7F3869}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testvhid", "app\testvhid.vcxproj", "{36B830C1-B73B-4CEE-B872-FD7D09268BD0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -20,6 +22,14 @@ Global
 		{64048006-1C5F-4262-823B-54310D7F3869}.Release|ARM64.Build.0 = Release|ARM64
 		{64048006-1C5F-4262-823B-54310D7F3869}.Release|x64.ActiveCfg = Release|x64
 		{64048006-1C5F-4262-823B-54310D7F3869}.Release|x64.Build.0 = Release|x64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|ARM64.Build.0 = Debug|ARM64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|x64.ActiveCfg = Debug|x64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Debug|x64.Build.0 = Debug|x64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|ARM64.ActiveCfg = Release|ARM64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|ARM64.Build.0 = Release|ARM64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|x64.ActiveCfg = Release|x64
+		{36B830C1-B73B-4CEE-B872-FD7D09268BD0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

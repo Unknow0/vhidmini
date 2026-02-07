@@ -1,22 +1,63 @@
+#include "vhidmini.h"
+
+
+NTSTATUS
+RequestCopyFromBuffer(
+    _In_  WDFREQUEST        Request,
+    _In_  PVOID             SourceBuffer,
+    _When_(NumBytesToCopyFrom == 0, __drv_reportError(NumBytesToCopyFrom cannot be zero))
+    _In_  size_t            NumBytesToCopyFrom
+)
 /*++
 
-Copyright (C) Microsoft Corporation, All Rights Reserved.
+Routine Description:
 
-Module Name:
+    A helper function to copy specified bytes to the request's output memory
 
-    util.cpp
+Arguments:
 
-Abstract:
+    Request - A handle to a framework request object.
 
-    This module contains the implementation of the driver
+    SourceBuffer - The buffer to copy data from.
 
-Environment:
+    NumBytesToCopyFrom - The length, in bytes, of data to be copied.
 
-    Windows Driver Framework (WDF)
+Return Value:
+
+    NTSTATUS
 
 --*/
+{
+    NTSTATUS                status;
+    WDFMEMORY               memory;
+    size_t                  outputBufferLength;
 
-#include "vhidmini.h"
+    status = WdfRequestRetrieveOutputMemory(Request, &memory);
+    if (!NT_SUCCESS(status)) {
+        KdPrint(("WdfRequestRetrieveOutputMemory failed 0x%x\n", status));
+        return status;
+    }
+
+    WdfMemoryGetBuffer(memory, &outputBufferLength);
+    if (outputBufferLength < NumBytesToCopyFrom) {
+        status = STATUS_INVALID_BUFFER_SIZE;
+        KdPrint(("RequestCopyFromBuffer: buffer too small. Size %d, expect %d\n",
+            (int)outputBufferLength, (int)NumBytesToCopyFrom));
+        return status;
+    }
+
+    status = WdfMemoryCopyFromBuffer(memory,
+        0,
+        SourceBuffer,
+        NumBytesToCopyFrom);
+    if (!NT_SUCCESS(status)) {
+        KdPrint(("WdfMemoryCopyFromBuffer failed 0x%x\n", status));
+        return status;
+    }
+
+    WdfRequestSetInformation(Request, NumBytesToCopyFrom);
+    return status;
+}
 
 //
 // First let's review Buffer Descriptions for I/O Control Codes
